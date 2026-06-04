@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 import { Invoice, Client } from '@/types';
 import StatusBadge from '@/components/invoice/StatusBadge';
+import { revalidatePathAction } from '@/app/dashboard/actions';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -183,6 +184,8 @@ export default function InvoicesListClient({ initialInvoices }: InvoicesListClie
         )
       );
       setSelectedIds([]);
+      await revalidatePathAction('/dashboard/invoices');
+      await revalidatePathAction('/dashboard');
     } catch {
       toast.error('Failed to update status.');
     } finally {
@@ -208,6 +211,8 @@ export default function InvoicesListClient({ initialInvoices }: InvoicesListClie
       setInvoices((prev) => prev.filter((inv) => !selectedIds.includes(inv.id)));
       setSelectedIds([]);
       setShowBulkDeleteConfirm(false);
+      await revalidatePathAction('/dashboard/invoices');
+      await revalidatePathAction('/dashboard');
     } catch {
       toast.error('Failed to delete invoices.');
     } finally {
@@ -233,6 +238,8 @@ export default function InvoicesListClient({ initialInvoices }: InvoicesListClie
       toast.success(`Invoice ${invoiceToDelete.invoice_number} deleted successfully.`);
       setInvoices((prev) => prev.filter((inv) => inv.id !== invoiceToDelete.id));
       setInvoiceToDelete(null);
+      await revalidatePathAction('/dashboard/invoices');
+      await revalidatePathAction('/dashboard');
     } catch {
       toast.error('Failed to delete invoice.');
     } finally {

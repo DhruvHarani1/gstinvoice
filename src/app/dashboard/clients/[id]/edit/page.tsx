@@ -7,6 +7,7 @@ import { Loader2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { Client } from '@/types';
 import ClientForm, { ClientFormValues } from '@/components/clients/ClientForm';
+import { revalidatePathAction } from '@/app/dashboard/actions';
 
 export default function EditClientPage() {
   const router = useRouter();
@@ -98,6 +99,8 @@ export default function EditClientPage() {
       toast.success('Client updated successfully.');
       router.push('/dashboard/clients');
       router.refresh();
+      await revalidatePathAction('/dashboard/clients');
+      await revalidatePathAction('/dashboard');
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to update client.';
       toast.error(errorMessage);

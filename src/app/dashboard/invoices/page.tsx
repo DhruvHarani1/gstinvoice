@@ -1,6 +1,7 @@
 import React from 'react';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { getInvoices } from '@/lib/supabase/queries';
 import InvoicesListClient from '@/components/invoices/InvoicesListClient';
 import { Invoice, Client } from '@/types';
 
@@ -17,16 +18,8 @@ export default async function InvoicesPage() {
     redirect('/login');
   }
 
-  // Fetch Invoices along with their related Client information
-  const { data: invoices, error } = await supabase
-    .from('invoices')
-    .select('*, client:clients(*)')
-    .eq('user_id', user.id)
-    .order('invoice_date', { ascending: false });
-
-  if (error) {
-    console.error('Error fetching invoices server-side:', error);
-  }
+  // Fetch Invoices along with their related Client information (cached)
+  const invoices = await getInvoices(user.id);
 
   return (
     <InvoicesListClient

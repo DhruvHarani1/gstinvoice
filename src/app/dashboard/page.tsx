@@ -16,6 +16,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
+import { getProfile, getInvoices, getClients } from '@/lib/supabase/queries';
 import { InvoiceStatus } from '@/types';
 
 // Currency Formatter
@@ -51,42 +52,27 @@ export default async function DashboardPage() {
     redirect('/login');
   }
 
-  // Fetch Merchant Profile
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('business_name')
-    .eq('id', user.id)
-    .single();
+  // Fetch Merchant Profile (cached)
+  const profile = await getProfile(user.id);
 
-  // Fetch Invoices
-  const { data: invoices } = await supabase
-    .from('invoices')
-    .select('*, client:clients(name)')
-    .eq('user_id', user.id)
-    .order('created_at', { ascending: false });
+  // Fetch Invoices (cached)
+  const invoices = await getInvoices(user.id);
 
-  // Fetch Clients Count
-  const { count: totalClients } = await supabase
-    .from('clients')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', user.id);
+  // Fetch Clients (cached)
+  const clientsList = await getClients(user.id);
 
-  // Fetch Clients Count (for change calc, previous month)
+  // Date constants
   const now = new Date();
   const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
 
-  const { count: clientsLastMonth } = await supabase
-    .from('clients')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', user.id)
-    .lt('created_at', startOfCurrentMonth.toISOString());
-
   // Statistics Calculations
   const invoicesList = invoices || [];
-  const clientCount = totalClients || 0;
-  const clientCountLastMonth = clientsLastMonth || 0;
+  const clientCount = clientsList.length;
+  const clientCountLastMonth = clientsList.filter(
+    (c) => new Date(c.created_at) < startOfCurrentMonth
+  ).length;
 
   // Invoices Created
   const invoicesThisMonth = invoicesList.filter(

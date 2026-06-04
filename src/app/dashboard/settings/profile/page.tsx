@@ -1,11 +1,14 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import { useProfile } from '@/contexts/ProfileContext';
 import { createClient } from '@/lib/supabase/client';
 import { INDIAN_STATES } from '@/lib/constants';
 import { Upload, Loader2, FileText } from 'lucide-react';
 import { toast } from 'sonner';
+import { compressImage } from '@/lib/image-compression';
+import { revalidatePathAction } from '@/app/dashboard/actions';
 
 export default function ProfileSettingsPage() {
   const { profile, refreshProfile } = useProfile();
@@ -73,6 +76,7 @@ export default function ProfileSettingsPage() {
       if (error) throw error;
 
       toast.success('Business profile updated successfully!');
+      await revalidatePathAction('/dashboard');
       await refreshProfile();
     } catch (err) {
       console.error(err);
@@ -89,20 +93,21 @@ export default function ProfileSettingsPage() {
     setPreview: React.Dispatch<React.SetStateAction<string | null>>,
     dbField: 'logo_url' | 'signature_url'
   ) => {
-    const file = e.target.files?.[0];
+    let file = e.target.files?.[0];
     if (!file || !profile) return;
 
-    // File size validation: 2MB limit
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error('File size exceeds the 2MB limit. Please compress your image.');
-      return;
+    setUploading(true);
+
+    // Compress client-side using Canvas API
+    try {
+      file = await compressImage(file, 600, 0.75);
+    } catch (compressErr) {
+      console.error('Image compression failed, uploading original:', compressErr);
     }
 
-    // Set local preview instantly
+    // Set local preview instantly after compression
     const localUrl = URL.createObjectURL(file);
     setPreview(localUrl);
-
-    setUploading(true);
     try {
       const fileExt = file.name.split('.').pop();
       const fileName = `${profile.id}-${Date.now()}.${fileExt}`;
@@ -135,6 +140,7 @@ export default function ProfileSettingsPage() {
       if (updateError) throw updateError;
 
       toast.success(`${bucket === 'logos' ? 'Logo' : 'Signature'} uploaded and updated successfully!`);
+      await revalidatePathAction('/dashboard');
       await refreshProfile();
     } catch (err) {
       console.error(err);
@@ -290,7 +296,16 @@ export default function ProfileSettingsPage() {
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 border border-slate-200 bg-white rounded-xl overflow-hidden flex items-center justify-center relative shrink-0">
                 {logoPreview ? (
-                  <img src={logoPreview} alt="Logo preview" className="w-full h-full object-contain" />
+                  <Image 
+                    src={logoPreview} 
+                    alt="Logo preview" 
+                    fill 
+                    sizes="64px" 
+                    className="object-contain" 
+                    unoptimized 
+                    placeholder="blur"
+                    blurDataURL="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiIHZpZXdCb3g9IjAgMCA4IDgiPgo8cmVjdCB3aWR0aD0iOCIgaGVpZHRoPSI4IiBmaWxsPSIjRjFGNUY5Ii8+Cjwvc3ZnPg=="
+                  />
                 ) : (
                   <Upload className="w-6 h-6 text-slate-300" />
                 )}
@@ -329,7 +344,16 @@ export default function ProfileSettingsPage() {
             <div className="flex items-center gap-4">
               <div className="w-20 h-12 border border-slate-200 bg-white rounded-lg overflow-hidden flex items-center justify-center relative shrink-0">
                 {sigPreview ? (
-                  <img src={sigPreview} alt="Signature preview" className="w-full h-full object-contain" />
+                  <Image 
+                    src={sigPreview} 
+                    alt="Signature preview" 
+                    fill 
+                    sizes="80px" 
+                    className="object-contain" 
+                    unoptimized 
+                    placeholder="blur"
+                    blurDataURL="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiIHZpZXdCb3g9IjAgMCA4IDgiPgo8cmVjdCB3aWR0aD0iOCIgaGVpZHRoPSI4IiBmaWxsPSIjRjFGNUY5Ii8+Cjwvc3ZnPg=="
+                  />
                 ) : (
                   <Upload className="w-5 h-5 text-slate-300" />
                 )}
@@ -369,9 +393,18 @@ export default function ProfileSettingsPage() {
             </span>
             <div className="bg-white rounded-lg p-3 border border-slate-100 flex items-start justify-between shadow-sm">
               <div className="flex items-center gap-2">
-                <div className="w-10 h-10 border border-slate-100 rounded bg-slate-50 overflow-hidden flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 border border-slate-100 rounded bg-slate-50 overflow-hidden flex items-center justify-center shrink-0 relative">
                   {logoPreview ? (
-                    <img src={logoPreview} alt="Preview logo" className="w-full h-full object-contain" />
+                    <Image 
+                      src={logoPreview} 
+                      alt="Preview logo" 
+                      fill 
+                      sizes="40px" 
+                      className="object-contain" 
+                      unoptimized 
+                      placeholder="blur"
+                      blurDataURL="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiIHZpZXdCb3g9IjAgMCA4IDgiPgo8cmVjdCB3aWR0aD0iOCIgaGVpZHRoPSI4IiBmaWxsPSIjRjFGNUY5Ii8+Cjwvc3ZnPg=="
+                    />
                   ) : (
                     <span className="text-slate-400 text-xs font-black">
                       {businessName ? businessName.charAt(0).toUpperCase() : 'B'}

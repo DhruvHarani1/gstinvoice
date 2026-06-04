@@ -20,6 +20,7 @@ import { Invoice, InvoiceItem, Client, Profile } from '@/types';
 import StatusBadge from '@/components/invoice/StatusBadge';
 import { numberToIndianWords } from '@/lib/utils';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import { revalidatePathAction } from '@/app/dashboard/actions';
 
 interface InvoiceDetailClientProps {
   invoice: Invoice & { client: Client };
@@ -112,6 +113,8 @@ export default function InvoiceDetailClient({
 
       toast.success(`Invoice status updated to ${newStatus}.`);
       router.refresh();
+      await revalidatePathAction('/dashboard/invoices');
+      await revalidatePathAction('/dashboard');
     } catch {
       // Rollback
       setInvoice(prevInvoiceState);
@@ -165,6 +168,8 @@ export default function InvoiceDetailClient({
       }));
       setShowRecordPayment(false);
       router.refresh();
+      await revalidatePathAction('/dashboard/invoices');
+      await revalidatePathAction('/dashboard');
     } catch {
       toast.error('Failed to record payment.');
     } finally {
@@ -314,6 +319,8 @@ export default function InvoiceDetailClient({
       toast.success(`Duplicated invoice as ${dupInvoiceNumber} successfully.`);
       router.push(`/dashboard/invoices/${dupHeader.id}/edit`);
       router.refresh();
+      await revalidatePathAction('/dashboard/invoices');
+      await revalidatePathAction('/dashboard');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Duplication failed.';
       toast.error(msg);
@@ -339,6 +346,8 @@ export default function InvoiceDetailClient({
       toast.success('Invoice deleted successfully.');
       router.push('/dashboard/invoices');
       router.refresh();
+      await revalidatePathAction('/dashboard/invoices');
+      await revalidatePathAction('/dashboard');
     } catch {
       toast.error('Failed to delete invoice.');
     } finally {

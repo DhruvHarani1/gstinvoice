@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 import ClientForm, { ClientFormValues } from '@/components/clients/ClientForm';
+import { revalidatePathAction } from '@/app/dashboard/actions';
 
 export default function NewClientPage() {
   const router = useRouter();
@@ -47,6 +48,8 @@ export default function NewClientPage() {
       toast.success('Client added successfully.');
       router.push('/dashboard/clients');
       router.refresh();
+      await revalidatePathAction('/dashboard/clients');
+      await revalidatePathAction('/dashboard');
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to add client.';
       toast.error(errorMessage);
