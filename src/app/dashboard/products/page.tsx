@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Package, Plus, Search, Edit2, Trash2, X, AlertCircle } from 'lucide-react';
+import { Package, Plus, Search, Edit2, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import EmptyState from '@/components/ui/EmptyState';
