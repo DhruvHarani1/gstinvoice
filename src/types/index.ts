@@ -21,6 +21,9 @@ export interface Profile {
   signature_url: string | null;
   invoice_prefix: string;
   next_invoice_number: number;
+  referral_code: string;
+  referred_by: string | null;
+  referrals_rewarded: number;
   created_at: string;
   updated_at: string;
 }

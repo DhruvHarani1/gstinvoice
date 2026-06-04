@@ -24,6 +24,7 @@ import { numberToIndianWords } from '@/lib/utils';
 import { INDIAN_STATES, GST_RATES } from '@/lib/constants';
 import QuickAddClientModal from '@/components/clients/QuickAddClientModal';
 import UpgradeModal from '@/components/upgrade/UpgradeModal';
+import Confetti from '@/components/ui/Confetti';
 import { revalidatePathAction } from '@/app/dashboard/actions';
 
 interface LineItemInput {
@@ -71,6 +72,10 @@ export default function InvoiceBuilderNew() {
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [isDownloadingPDF, setIsDownloadingPDF] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
+
+  // Milestone triggers
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
 
   // Load User Data & Clients
   const loadInitialData = useCallback(async () => {
@@ -382,11 +387,58 @@ export default function InvoiceBuilderNew() {
       await revalidatePathAction('/dashboard/invoices');
       await revalidatePathAction('/dashboard');
 
-      return invoiceData;
+      // Fetch updated count
+      let invoices_created_count = 0;
+      try {
+        const { data: subData } = await supabase
+          .from('subscriptions')
+          .select('invoices_created_count')
+          .eq('user_id', user.id)
+          .single();
+        invoices_created_count = subData?.invoices_created_count || 0;
+      } catch (err) {
+        console.error('Failed to get invoices created count:', err);
+      }
+
+      return {
+        ...invoiceData,
+        invoices_created_count,
+      };
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Database save failed.';
       toast.error(msg);
       return null;
+    }
+  };
+
+  // Helper to handle milestones and redirects
+  const checkMilestonesAndRedirect = async (
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    invoice: any,
+    successMessage: string,
+    onAfterAction?: () => Promise<void>
+  ) => {
+    if (onAfterAction) {
+      await onAfterAction();
+    }
+
+    const count = invoice.invoices_created_count || 0;
+    toast.success(successMessage);
+
+    if (count === 1) {
+      setShowConfetti(true);
+      toast.success("Milestone Unlocked! You created your first invoice! 🎉", {
+        duration: 4000,
+      });
+      setTimeout(() => {
+        router.push('/dashboard/invoices');
+        router.refresh();
+      }, 4000);
+    } else if (count === 10) {
+      setShowUpgradePrompt(true);
+    } else {
+      router.push('/dashboard/invoices');
+      router.refresh();
     }
   };
 
@@ -397,9 +449,7 @@ export default function InvoiceBuilderNew() {
     setIsSavingDraft(false);
 
     if (invoice) {
-      toast.success('Invoice saved as draft successfully.');
-      router.push('/dashboard/invoices');
-      router.refresh();
+      await checkMilestonesAndRedirect(invoice, 'Invoice saved as draft successfully.');
     }
   };
 
@@ -410,39 +460,38 @@ export default function InvoiceBuilderNew() {
     const invoice = await saveInvoice('sent');
 
     if (invoice) {
-      try {
-        // Dynamically load react-pdf renderer client-side only to bypass SSR restrictions
-        const { pdf } = await import('@react-pdf/renderer');
-        const InvoicePDF = (await import('@/components/invoices/InvoicePDF')).default;
+      await checkMilestonesAndRedirect(invoice, 'Invoice saved successfully.', async () => {
+        try {
+          // Dynamically load react-pdf renderer client-side only to bypass SSR restrictions
+          const { pdf } = await import('@react-pdf/renderer');
+          const InvoicePDF = (await import('@/components/invoices/InvoicePDF')).default;
 
-        const doc = (
-          <InvoicePDF
-            invoice={invoice}
-            items={computedData.items}
-            client={selectedClient!}
-            profile={profile}
-            pdfThemeColor={typeof window !== 'undefined' ? localStorage.getItem('invoicewala_pdf_theme') || undefined : undefined}
-            upiId={typeof window !== 'undefined' ? localStorage.getItem('invoicewala_upi_id') || undefined : undefined}
-            showBankDetails={typeof window !== 'undefined' ? localStorage.getItem('invoicewala_show_bank_details') !== 'false' : true}
-          />
-        );
+          const doc = (
+            <InvoicePDF
+              invoice={invoice}
+              items={computedData.items}
+              client={selectedClient!}
+              profile={profile}
+              pdfThemeColor={typeof window !== 'undefined' ? localStorage.getItem('invoicewala_pdf_theme') || undefined : undefined}
+              upiId={typeof window !== 'undefined' ? localStorage.getItem('invoicewala_upi_id') || undefined : undefined}
+              showBankDetails={typeof window !== 'undefined' ? localStorage.getItem('invoicewala_show_bank_details') !== 'false' : true}
+            />
+          );
 
-        const blob = await pdf(doc).toBlob();
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `${invoice.invoice_number}.pdf`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-
-        toast.success('Invoice saved and PDF downloaded.');
-        router.push('/dashboard/invoices');
-        router.refresh();
-      } catch (pdfErr) {
-        console.error('PDF Generation Failed:', pdfErr);
-        toast.error('Invoice saved, but PDF generation failed.');
-      }
+          const blob = await pdf(doc).toBlob();
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `${invoice.invoice_number}.pdf`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          toast.success('PDF download started.');
+        } catch (pdfErr) {
+          console.error('PDF Generation Failed:', pdfErr);
+          toast.error('PDF generation failed.');
+        }
+      });
     }
     setIsDownloadingPDF(false);
   };
@@ -458,9 +507,20 @@ export default function InvoiceBuilderNew() {
     const invoice = await saveInvoice('sent');
 
     if (invoice) {
-      toast.success(`Invoice saved and sent to ${selectedClient.email} successfully.`);
-      router.push('/dashboard/invoices');
-      router.refresh();
+      await checkMilestonesAndRedirect(invoice, `Invoice saved successfully.`, async () => {
+        try {
+          const sendRes = await fetch(`/api/invoice/${invoice.id}/send`, {
+            method: 'POST',
+          });
+          if (!sendRes.ok) {
+            throw new Error('Failed to send email via API');
+          }
+          toast.success(`Invoice emailed to ${selectedClient.email}`);
+        } catch (err) {
+          console.error('Failed to trigger email send API:', err);
+          toast.error('Failed to email invoice to client.');
+        }
+      });
     }
     setIsSendingEmail(false);
   };
@@ -943,6 +1003,22 @@ export default function InvoiceBuilderNew() {
         onClose={() => setIsQuickAddOpen(false)}
         onClientAdded={handleClientAdded}
       />
+
+      {showConfetti && <Confetti />}
+
+      {showUpgradePrompt && (
+        <UpgradeModal
+          isOpen={showUpgradePrompt}
+          onClose={() => {
+            setShowUpgradePrompt(false);
+            router.push('/dashboard/invoices');
+            router.refresh();
+          }}
+          title="You're growing fast! 🚀"
+          description="You've created 10 invoices on InvoiceWala. Upgrade to Pro for unlimited billing, custom branding, and premium support!"
+          bannerText="Milestone Reached"
+        />
+      )}
     </div>
   );
 }

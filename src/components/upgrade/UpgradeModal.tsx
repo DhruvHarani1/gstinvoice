@@ -9,9 +9,18 @@ import { toast } from 'sonner';
 interface UpgradeModalProps {
   isOpen: boolean;
   onClose: () => void;
+  title?: string;
+  description?: string;
+  bannerText?: string;
 }
 
-export default function UpgradeModal({ isOpen, onClose }: UpgradeModalProps) {
+export default function UpgradeModal({ 
+  isOpen, 
+  onClose,
+  title,
+  description,
+  bannerText
+}: UpgradeModalProps) {
   const { refreshSubscription } = useSubscription();
   const { profile } = useProfile();
   const [isProcessing, setIsProcessing] = useState(false);
@@ -122,10 +131,10 @@ export default function UpgradeModal({ isOpen, onClose }: UpgradeModalProps) {
           </button>
           
           <span className="bg-white/20 text-white text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full">
-            Invoice Limits Reached
+            {bannerText || "Invoice Limits Reached"}
           </span>
-          <h3 className="text-xl font-extrabold mt-2">Upgrade to Pro</h3>
-          <p className="text-indigo-100 text-xs mt-1">Unlock professional unlimited invoice generation</p>
+          <h3 className="text-xl font-extrabold mt-2">{title || "Upgrade to Pro"}</h3>
+          <p className="text-indigo-100 text-xs mt-1">{description || "Unlock professional unlimited invoice generation"}</p>
         </div>
 
         {/* Pricing details */}

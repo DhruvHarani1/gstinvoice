@@ -227,6 +227,15 @@ export default function InvoiceEmail({ invoice, client, profile }: InvoiceEmailP
           <a href="#" style={linkStyle}>Unsubscribe</a> | <a href={appUrl} style={linkStyle}>InvoiceWala</a>
         </p>
       </div>
+
+      {/* Email Tracking Pixel */}
+      <img
+        src={`${appUrl}/api/invoice/${invoice.id}/track`}
+        width="1"
+        height="1"
+        alt=""
+        style={{ display: 'none' }}
+      />
     </div>
   );
 }

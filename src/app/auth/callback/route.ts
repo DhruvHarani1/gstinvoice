@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -12,6 +13,40 @@ export async function GET(request: Request) {
 
     if (!error && data?.user) {
       const user = data.user;
+
+      // Handle referral link via cookie if present (especially for Google OAuth)
+      try {
+        const cookieHeader = request.headers.get('cookie') || '';
+        const referredByCodeMatch = cookieHeader.match(/referred_by_code=([^;]+)/);
+        const referredByCode = referredByCodeMatch ? decodeURIComponent(referredByCodeMatch[1]) : null;
+
+        if (referredByCode) {
+          const { data: dbProfile } = await supabaseAdmin
+            .from('profiles')
+            .select('referred_by')
+            .eq('id', user.id)
+            .single();
+
+          if (dbProfile && !dbProfile.referred_by) {
+            // Find referrer profile
+            const { data: referrer } = await supabaseAdmin
+              .from('profiles')
+              .select('id')
+              .eq('referral_code', referredByCode)
+              .single();
+
+            if (referrer && referrer.id !== user.id) {
+              await supabaseAdmin
+                .from('profiles')
+                .update({ referred_by: referrer.id })
+                .eq('id', user.id);
+              console.log(`Linked user ${user.id} to referrer ${referrer.id} via callback cookie`);
+            }
+          }
+        }
+      } catch (refErr) {
+        console.error('Failed to link referral in callback:', refErr);
+      }
 
       // Query profiles to check if onboarding is complete
       const { data: profile } = await supabase

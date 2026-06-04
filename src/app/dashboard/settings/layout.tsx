@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { User, FileText, Landmark, Shield, CreditCard } from 'lucide-react';
+import { User, FileText, Landmark, Shield, CreditCard, Bell } from 'lucide-react';
 
 export default function SettingsLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -12,6 +12,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
     { name: 'Business Profile', href: '/dashboard/settings/profile', icon: User },
     { name: 'Invoice Preferences', href: '/dashboard/settings/invoice', icon: FileText },
     { name: 'Bank Details', href: '/dashboard/settings/bank', icon: Landmark },
+    { name: 'Notifications', href: '/dashboard/settings/notifications', icon: Bell },
     { name: 'Account Credentials', href: '/dashboard/settings/account', icon: Shield },
     { name: 'Billing & Plan', href: '/dashboard/settings/billing', icon: CreditCard },
   ];

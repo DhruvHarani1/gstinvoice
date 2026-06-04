@@ -49,15 +49,27 @@ export default function SignupPageClient() {
     },
   });
 
+  const getCookie = (name: string): string | null => {
+    if (typeof document === 'undefined') return null;
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
+    return null;
+  };
+
   const onSubmit = async (data: SignupFormValues) => {
     setIsLoading(true);
     try {
+      const referredByCode = getCookie('referred_by_code') || 
+        (typeof window !== 'undefined' ? localStorage.getItem('referred_by_code') : null);
+
       const { error } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
         options: {
           data: {
             business_name: data.name, // Will be parsed by DB trigger as profiles.business_name
+            referred_by_code: referredByCode || undefined,
           },
           emailRedirectTo: `${window.location.origin}/auth/callback`,
         },

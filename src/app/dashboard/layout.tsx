@@ -23,6 +23,8 @@ import {
 import { ProfileProvider, useProfile } from '@/contexts/ProfileContext';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
+import FeedbackWidget from '@/components/FeedbackWidget';
+import WhatsNew from '@/components/WhatsNew';
 
 // Sidebar Navigation Configuration
 const navigationItems = [
@@ -190,6 +192,22 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
           </div>
         )}
 
+        {/* Referral Promo Banner */}
+        {isFreePlan && (
+          <Link
+            href="/dashboard/referral"
+            className="block p-4 bg-slate-50 hover:bg-indigo-50/50 border border-slate-100 hover:border-indigo-100/50 rounded-xl space-y-1 relative overflow-hidden transition-all duration-150 group"
+          >
+            <div className="flex items-center gap-2 text-slate-800 font-bold text-xs">
+              <Users className="w-4 h-4 text-[#6C63FF] group-hover:scale-110 transition-transform duration-200" />
+              <span>Refer friends, get free Pro</span>
+            </div>
+            <p className="text-[10px] leading-relaxed text-slate-500 font-medium">
+              Get 1 month Pro free for every 3 friends who upgrade.
+            </p>
+          </Link>
+        )}
+
         {/* User Card */}
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-indigo-50 rounded-full flex items-center justify-center text-[#6C63FF] font-bold text-sm shrink-0 border border-indigo-100">
@@ -325,9 +343,13 @@ function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* Child Router Content */}
-        <main className="flex-1 overflow-y-auto p-6 md:p-8">
+        <main className="flex-1 overflow-y-auto p-6 md:p-8 relative">
           {children}
         </main>
+
+        {/* Growth & Engagement Widgets */}
+        <FeedbackWidget />
+        <WhatsNew />
       </div>
     </div>
   );

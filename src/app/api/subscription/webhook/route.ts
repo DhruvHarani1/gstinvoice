@@ -80,7 +80,14 @@ export async function POST(request: NextRequest) {
 
     switch (event) {
       case 'subscription.activated':
-      case 'subscription.charged':
+      case 'subscription.charged': {
+        // Retrieve the user_id associated with this subscription ID
+        const { data: subData } = await supabaseAdmin
+          .from('subscriptions')
+          .select('user_id')
+          .eq('razorpay_subscription_id', subscriptionId)
+          .single();
+
         await supabaseAdmin
           .from('subscriptions')
           .update({
@@ -90,7 +97,26 @@ export async function POST(request: NextRequest) {
           })
           .eq('razorpay_subscription_id', subscriptionId);
         console.log(`Subscription ${subscriptionId} status set to active (Plan: ${planName})`);
+
+        // Trigger referral reward check if user is upgraded
+        if (subData?.user_id && (planName === 'pro' || planName === 'business')) {
+          try {
+            const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+            const res = await fetch(`${appUrl}/api/referral/reward`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ userId: subData.user_id }),
+            });
+            const resText = await res.text();
+            console.log(`Triggered referral check for user ${subData.user_id}. Response:`, resText);
+          } catch (err) {
+            console.error('Failed to trigger referral reward check:', err);
+          }
+        }
         break;
+      }
 
       case 'subscription.cancelled':
         await supabaseAdmin

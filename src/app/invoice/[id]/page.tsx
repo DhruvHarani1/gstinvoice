@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { supabaseAdmin } from '@/lib/supabase/admin';
 import PublicInvoiceViewClient from '@/components/invoice/PublicInvoiceViewClient';
-import { Invoice, Client } from '@/types';
+import { Invoice, Client, Profile } from '@/types';
 
 export const revalidate = 0;
 
@@ -180,7 +180,7 @@ export default async function PublicInvoicePage({ params }: Props) {
       <PublicInvoiceViewClient
         invoice={mockInvoiceData.invoice as unknown as (Invoice & { client: Client })}
         items={mockInvoiceData.items}
-        profile={mockInvoiceData.profile}
+        profile={mockInvoiceData.profile as unknown as Profile}
         sellerEmail={mockInvoiceData.sellerEmail}
       />
     );
@@ -224,6 +224,14 @@ export default async function PublicInvoicePage({ params }: Props) {
     }
   } catch (err) {
     console.error('Failed to retrieve auth user email:', err);
+  }
+
+  // 5. Trigger email alert tracking asynchronously if not draft
+  if (invoice.status !== 'draft') {
+    const { trackInvoiceView } = await import('@/lib/email/track');
+    trackInvoiceView(invoice.id).catch((err) => {
+      console.error('Failed to track client view:', err);
+    });
   }
 
   return (
