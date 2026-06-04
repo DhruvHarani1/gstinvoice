@@ -232,92 +232,18 @@ export default function InvoiceDetailClient({
   const handleDuplicateInvoice = async () => {
     setIsDuplicating(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        toast.error('Authentication expired.');
-        return;
+      const response = await fetch(`/api/invoice/${invoice.id}/duplicate`, {
+        method: 'POST',
+      });
+      const result = await response.json();
+      
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Duplication failed.');
       }
-
-      // Fetch Latest Profile for prefix and next invoice number
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-
-      if (!profileData) throw new Error('Failed to load profile.');
-
-      const nextNum = profileData.next_invoice_number;
-      const dupInvoiceNumber = `${profileData.invoice_prefix || 'INV'}-${String(nextNum).padStart(4, '0')}`;
-
-      // 1. Insert Header Copy
-      const headerPayload = {
-        user_id: user.id,
-        client_id: invoice.client.id,
-        invoice_number: dupInvoiceNumber,
-        invoice_date: new Date().toISOString().split('T')[0],
-        due_date: null,
-        status: 'draft',
-        place_of_supply: invoice.place_of_supply,
-        subtotal: invoice.subtotal,
-        cgst_amount: invoice.cgst_amount,
-        sgst_amount: invoice.sgst_amount,
-        igst_amount: invoice.igst_amount,
-        total_amount: invoice.total_amount,
-        amount_paid: 0.00,
-        notes: invoice.notes,
-        terms: invoice.terms,
-      };
-
-      const { data: dupHeader, error: dupHeaderError } = await supabase
-        .from('invoices')
-        .insert(headerPayload)
-        .select('*')
-        .single();
-
-      if (dupHeaderError) {
-        toast.error(dupHeaderError.message);
-        return;
-      }
-
-      // 2. Insert items copy
-      const itemsPayload = items.map((item, idx) => ({
-        invoice_id: dupHeader.id,
-        description: item.description,
-        hsn_sac: item.hsn_sac,
-        quantity: item.quantity,
-        rate: item.rate,
-        gst_rate: item.gst_rate,
-        taxable_amount: item.taxable_amount,
-        cgst_rate: item.cgst_rate,
-        cgst_amount: item.cgst_amount,
-        sgst_rate: item.sgst_rate,
-        sgst_amount: item.sgst_amount,
-        igst_rate: item.igst_rate,
-        igst_amount: item.igst_amount,
-        total_amount: item.total_amount,
-        sort_order: idx,
-      }));
-
-      const { error: dupItemsError } = await supabase
-        .from('invoice_items')
-        .insert(itemsPayload);
-
-      if (dupItemsError) {
-        // Rollback duplicated header
-        await supabase.from('invoices').delete().eq('id', dupHeader.id);
-        toast.error(dupItemsError.message);
-        return;
-      }
-
-      // 3. Increment Next invoice index
-      await supabase
-        .from('profiles')
-        .update({ next_invoice_number: nextNum + 1 })
-        .eq('id', user.id);
-
-      toast.success(`Duplicated invoice as ${dupInvoiceNumber} successfully.`);
-      router.push(`/dashboard/invoices/${dupHeader.id}/edit`);
+      
+      const newInvoice = result.invoice;
+      toast.success(`Duplicated invoice as ${newInvoice.invoice_number} successfully.`);
+      router.push(`/dashboard/invoices/${newInvoice.id}/edit`);
       router.refresh();
       await revalidatePathAction('/dashboard/invoices');
       await revalidatePathAction('/dashboard');

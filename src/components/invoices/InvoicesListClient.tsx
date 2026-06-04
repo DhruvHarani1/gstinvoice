@@ -12,15 +12,17 @@ import {
   Eye,
   Edit2,
   Loader2,
-  AlertTriangle,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  FileText
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 import { Invoice, Client } from '@/types';
 import StatusBadge from '@/components/invoice/StatusBadge';
 import { revalidatePathAction } from '@/app/dashboard/actions';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import EmptyState from '@/components/ui/EmptyState';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -295,8 +297,19 @@ export default function InvoicesListClient({ initialInvoices }: InvoicesListClie
 
       {/* List Container */}
       <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden flex flex-col justify-between min-h-[450px] relative">
-        
-        {/* Search header panel */}
+        {invoices.length === 0 ? (
+          <EmptyState
+            icon={FileText}
+            title="Create your first invoice"
+            description="You haven't created any invoices yet. Generate a professional GST invoice with a live calculation system."
+            action={{
+              label: 'New Invoice',
+              href: '/dashboard/invoices/new'
+            }}
+          />
+        ) : (
+          <>
+            {/* Search header panel */}
         <div className="p-4 border-b border-slate-50 flex flex-col sm:flex-row gap-4 items-center justify-between bg-white select-none z-10">
           <div className="relative w-full max-w-sm">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
@@ -482,81 +495,35 @@ export default function InvoicesListClient({ initialInvoices }: InvoicesListClie
             </div>
           </div>
         )}
+          </>
+        )}
       </div>
 
       {/* Delete Single Confirmation Modal */}
-      {invoiceToDelete && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-6 shadow-2xl border border-slate-100">
-            <div className="flex items-start gap-4">
-              <div className="p-3 bg-red-50 text-red-600 rounded-full shrink-0">
-                <AlertTriangle className="w-6 h-6" />
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-lg font-bold text-slate-900">Delete invoice?</h3>
-                <p className="text-sm text-slate-500 leading-relaxed">
-                  Are you sure you want to delete invoice <span className="font-semibold text-slate-900">{invoiceToDelete.invoice_number}</span>?
-                  This action is permanent and will delete the invoice along with its child line items database rows.
-                </p>
-              </div>
-            </div>
-            <div className="flex justify-end gap-3 pt-2">
-              <button
-                onClick={() => setInvoiceToDelete(null)}
-                disabled={isDeletingSingle}
-                className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold rounded-lg text-xs transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDeleteSingle}
-                disabled={isDeletingSingle}
-                className="px-5 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg text-xs transition-colors flex items-center gap-1.5"
-              >
-                {isDeletingSingle && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        isOpen={!!invoiceToDelete}
+        title="Delete invoice?"
+        description={`Are you sure you want to delete invoice ${invoiceToDelete?.invoice_number}? This action is permanent and will delete the invoice along with its child line items database rows.`}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        onConfirm={handleDeleteSingle}
+        onCancel={() => setInvoiceToDelete(null)}
+        isLoading={isDeletingSingle}
+        type="danger"
+      />
 
       {/* Bulk Delete Confirmation Modal */}
-      {showBulkDeleteConfirm && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-6 shadow-2xl border border-slate-100">
-            <div className="flex items-start gap-4">
-              <div className="p-3 bg-red-50 text-red-600 rounded-full shrink-0">
-                <AlertTriangle className="w-6 h-6" />
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-lg font-bold text-slate-900">Delete multiple invoices?</h3>
-                <p className="text-sm text-slate-500 leading-relaxed">
-                  Are you sure you want to delete the <span className="font-semibold text-slate-900">{selectedIds.length}</span> selected invoices?
-                  This action is permanent and cannot be undone. All linked line item rows will also be deleted.
-                </p>
-              </div>
-            </div>
-            <div className="flex justify-end gap-3 pt-2">
-              <button
-                onClick={() => setShowBulkDeleteConfirm(false)}
-                disabled={isBulkDeleting}
-                className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold rounded-lg text-xs transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleBulkDelete}
-                disabled={isBulkDeleting}
-                className="px-5 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg text-xs transition-colors flex items-center gap-1.5"
-              >
-                {isBulkDeleting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                Delete Invoices
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        isOpen={showBulkDeleteConfirm}
+        title="Delete multiple invoices?"
+        description={`Are you sure you want to delete the ${selectedIds.length} selected invoices? This action is permanent and cannot be undone. All linked line item rows will also be deleted.`}
+        confirmLabel="Delete Invoices"
+        cancelLabel="Cancel"
+        onConfirm={handleBulkDelete}
+        onCancel={() => setShowBulkDeleteConfirm(false)}
+        isLoading={isBulkDeleting}
+        type="danger"
+      />
     </div>
   );
 }

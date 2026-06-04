@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { sendInvoiceEmail } from '@/lib/email/sendInvoice';
+import { checkRateLimit } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs'; // Ensure running in full Node.js environment for @react-pdf/renderer
 
@@ -9,6 +10,24 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
+    // Check Rate Limiting (max 10 emails per minute)
+    const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || '127.0.0.1';
+    const limitResult = checkRateLimit(ip, 10, 60000);
+    
+    if (!limitResult.success) {
+      return NextResponse.json(
+        { error: 'Too Many Requests. Maximum 10 invoice email dispatches per minute.' },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': '60',
+            'X-RateLimit-Limit': '10',
+            'X-RateLimit-Remaining': '0',
+          },
+        }
+      );
+    }
+
     const supabase = createClient();
 
     // 1. Verify user is authenticated

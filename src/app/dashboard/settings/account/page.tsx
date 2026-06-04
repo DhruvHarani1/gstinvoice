@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { Loader2, Key, Mail, ShieldAlert } from 'lucide-react';
 import { toast } from 'sonner';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 
 export default function AccountSettingsPage() {
   const supabase = createClient();
@@ -23,6 +24,7 @@ export default function AccountSettingsPage() {
   // Delete account state
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const handleEmailChange = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,7 +79,7 @@ export default function AccountSettingsPage() {
     }
   };
 
-  const handleDeleteAccount = async (e: React.FormEvent) => {
+  const handleSubmitDelete = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (deleteConfirmText !== 'DELETE') {
@@ -85,10 +87,11 @@ export default function AccountSettingsPage() {
       return;
     }
 
-    if (!confirm('WARNING: Deleting your account is permanent and cannot be undone. All your business profiles, client rosters, subscription details, and invoices will be purged. Are you sure you wish to proceed?')) {
-      return;
-    }
+    setShowDeleteConfirm(true);
+  };
 
+  const executeDeleteAccount = async () => {
+    setShowDeleteConfirm(false);
     setIsDeleting(true);
     try {
       const res = await fetch('/api/user/delete', {
@@ -244,7 +247,7 @@ export default function AccountSettingsPage() {
             Deleting your account is a permanent action. This will erase your invoices, client directories, subscription properties, and personal profiles immediately. You cannot undo this step.
           </p>
           <form 
-            onSubmit={handleDeleteAccount} 
+            onSubmit={handleSubmitDelete} 
             className="space-y-4 max-w-sm"
             onKeyDown={(e) => {
               if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
@@ -279,6 +282,18 @@ export default function AccountSettingsPage() {
         </div>
 
       </div>
+
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        title="Delete account?"
+        description="WARNING: Deleting your account is permanent and cannot be undone. All your business profiles, client rosters, subscription details, and invoices will be purged. Are you sure you wish to proceed?"
+        confirmLabel="Delete Account"
+        cancelLabel="Cancel"
+        onConfirm={executeDeleteAccount}
+        onCancel={() => setShowDeleteConfirm(false)}
+        isLoading={isDeleting}
+        type="danger"
+      />
     </div>
   );
 }
