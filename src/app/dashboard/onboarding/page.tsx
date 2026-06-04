@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -38,6 +38,7 @@ export default function OnboardingPage() {
 
   const form = useForm<OnboardingFormValues>({
     resolver: zodResolver(onboardingSchema),
+    mode: 'onBlur',
     defaultValues: {
       business_name: '',
       full_name: '',
@@ -94,40 +95,8 @@ export default function OnboardingPage() {
     loadProfile();
   }, [supabase, router, form]);
 
-  const handleNext = async () => {
-    let isValid = false;
 
-    if (currentStep === 1) {
-      isValid = await form.trigger(['business_name', 'full_name', 'phone']);
-    } else if (currentStep === 2) {
-      isValid = await form.trigger(['gstin', 'address', 'city', 'state', 'pincode']);
-    } else if (currentStep === 3) {
-      isValid = await form.trigger(['bank_name', 'bank_account', 'bank_ifsc']);
-    }
-
-    if (isValid) {
-      if (currentStep < STEPS_COUNT - 1) {
-        setCurrentStep((prev) => prev + 1);
-      } else {
-        await submitOnboarding(form.getValues());
-      }
-    }
-  };
-
-  const handleBack = () => {
-    if (currentStep > 1) {
-      setCurrentStep((prev) => prev - 1);
-    }
-  };
-
-  const handleSkipBankDetails = async () => {
-    form.setValue('bank_name', '');
-    form.setValue('bank_account', '');
-    form.setValue('bank_ifsc', '');
-    await submitOnboarding(form.getValues());
-  };
-
-  const submitOnboarding = async (values: OnboardingFormValues) => {
+  const submitOnboarding = useCallback(async (values: OnboardingFormValues) => {
     setIsSubmitting(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -171,6 +140,50 @@ export default function OnboardingPage() {
     } finally {
       setIsSubmitting(false);
     }
+  }, [supabase, router]);
+
+  const handleNext = useCallback(async () => {
+    let isValid = false;
+
+    if (currentStep === 1) {
+      isValid = await form.trigger(['business_name', 'full_name', 'phone']);
+    } else if (currentStep === 2) {
+      isValid = await form.trigger(['gstin', 'address', 'city', 'state', 'pincode']);
+    } else if (currentStep === 3) {
+      isValid = await form.trigger(['bank_name', 'bank_account', 'bank_ifsc']);
+    }
+
+    if (isValid) {
+      if (currentStep < STEPS_COUNT - 1) {
+        setCurrentStep((prev) => prev + 1);
+      } else {
+        await submitOnboarding(form.getValues());
+      }
+    }
+  }, [currentStep, form, submitOnboarding]);
+
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        handleNext();
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [handleNext]);
+
+  const handleBack = () => {
+    if (currentStep > 1) {
+      setCurrentStep((prev) => prev - 1);
+    }
+  };
+
+  const handleSkipBankDetails = async () => {
+    form.setValue('bank_name', '');
+    form.setValue('bank_account', '');
+    form.setValue('bank_ifsc', '');
+    await submitOnboarding(form.getValues());
   };
 
   if (isInitialLoading) {
@@ -227,6 +240,7 @@ export default function OnboardingPage() {
                     id="business_name"
                     type="text"
                     placeholder="Acme Solutions Private Limited"
+                    autoFocus
                     className={`w-full px-3 py-2 border rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#6C63FF] focus:border-[#6C63FF] ${
                       form.formState.errors.business_name ? 'border-red-500' : 'border-slate-300'
                     }`}

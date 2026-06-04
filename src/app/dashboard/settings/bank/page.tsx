@@ -76,7 +76,16 @@ export default function BankSettingsPage() {
         <p className="text-slate-500 text-xs mt-0.5">Specify bank accounts and payment keys printed on invoices.</p>
       </div>
 
-      <form onSubmit={handleBankSave} className="space-y-6">
+      <form 
+        onSubmit={handleBankSave} 
+        className="space-y-6"
+        onKeyDown={(e) => {
+          if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+            e.preventDefault();
+            e.currentTarget.requestSubmit();
+          }
+        }}
+      >
         
         {/* Bank Parameters */}
         <div className="border border-slate-100 rounded-xl p-5 space-y-4 bg-slate-50/20">
@@ -92,6 +101,7 @@ export default function BankSettingsPage() {
               <input
                 id="bank-name"
                 type="text"
+                autoFocus
                 value={bankName}
                 onChange={(e) => setBankName(e.target.value)}
                 className="w-full text-xs border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-100 outline-none transition-all"

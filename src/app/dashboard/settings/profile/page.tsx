@@ -153,7 +153,16 @@ export default function ProfileSettingsPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left Columns - Inputs form */}
-        <form onSubmit={handleProfileSave} className="lg:col-span-2 space-y-4">
+        <form 
+          onSubmit={handleProfileSave} 
+          className="lg:col-span-2 space-y-4"
+          onKeyDown={(e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+              e.preventDefault();
+              e.currentTarget.requestSubmit();
+            }
+          }}
+        >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1" htmlFor="business-name">
@@ -163,6 +172,7 @@ export default function ProfileSettingsPage() {
                 id="business-name"
                 type="text"
                 required
+                autoFocus
                 value={businessName}
                 onChange={(e) => setBusinessName(e.target.value)}
                 className="w-full text-xs border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-100 outline-none transition-all"

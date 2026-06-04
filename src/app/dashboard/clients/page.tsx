@@ -10,13 +10,14 @@ import {
   Edit2,
   Trash2,
   ChevronLeft,
-  ChevronRight,
-  AlertTriangle,
-  Loader2
+  ChevronRight
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 import { Client } from '@/types';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import EmptyState from '@/components/ui/EmptyState';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -92,22 +93,32 @@ export default function ClientsPage() {
 
   const handleDeleteClient = async () => {
     if (!clientToDelete) return;
+    const backupClients = [...clients];
+    
+    // Optimistic Update
+    setClients((prev) => prev.filter((c) => c.id !== clientToDelete.id));
+    const targetId = clientToDelete.id;
+    const targetName = clientToDelete.name;
+    setClientToDelete(null);
     setIsDeleting(true);
+
     try {
       const { error } = await supabase
         .from('clients')
         .delete()
-        .eq('id', clientToDelete.id);
+        .eq('id', targetId);
 
       if (error) {
+        // Rollback
+        setClients(backupClients);
         toast.error(error.message);
         return;
       }
 
-      toast.success('Client deleted successfully.');
-      setClients((prev) => prev.filter((c) => c.id !== clientToDelete.id));
-      setClientToDelete(null);
+      toast.success(`Client "${targetName}" deleted successfully.`);
     } catch {
+      // Rollback
+      setClients(backupClients);
       toast.error('Failed to delete client.');
     } finally {
       setIsDeleting(false);
@@ -155,29 +166,19 @@ export default function ClientsPage() {
       <div className="bg-white border border-slate-100 rounded-2xl shadow-sm overflow-hidden flex flex-col justify-between min-h-[400px]">
         {isLoading ? (
           <div className="flex-1 flex flex-col justify-center items-center py-20 gap-4">
-            <Loader2 className="w-8 h-8 animate-spin text-[#6C63FF]" />
+            <LoadingSpinner />
             <p className="text-slate-500 text-sm font-medium">Loading clients directory...</p>
           </div>
         ) : clients.length === 0 ? (
-          /* Initial Empty State */
-          <div className="flex-1 flex flex-col justify-center items-center py-20 text-center space-y-4 max-w-sm mx-auto">
-            <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center text-slate-400">
-              <Users className="w-8 h-8" />
-            </div>
-            <div className="space-y-1">
-              <h4 className="font-bold text-slate-800 text-sm">Add your first client</h4>
-              <p className="text-slate-400 text-xs leading-relaxed">
-                You haven&apos;t added any clients yet. Click the button below to register a client profile and start generating GST invoices.
-              </p>
-            </div>
-            <Link
-              href="/dashboard/clients/new"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-[#6C63FF] hover:bg-[#554ce6] text-white text-xs font-bold rounded-lg transition-colors shadow-sm"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              Add Client
-            </Link>
-          </div>
+          <EmptyState
+            icon={Users}
+            title="Add your first client"
+            description="You haven't added any clients yet. Register a client profile and start generating GST invoices."
+            action={{
+              label: 'Add Client',
+              href: '/dashboard/clients/new'
+            }}
+          />
         ) : (
           /* Active Client List Dashboard UI */
           <div className="flex flex-col justify-between flex-grow">
@@ -286,42 +287,17 @@ export default function ClientsPage() {
         )}
       </div>
 
-      {/* Delete Confirmation Modal */}
-      {clientToDelete && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-6 shadow-2xl border border-slate-100">
-            <div className="flex items-start gap-4">
-              <div className="p-3 bg-red-50 text-red-600 rounded-full shrink-0">
-                <AlertTriangle className="w-6 h-6" />
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-lg font-bold text-slate-900">Delete client?</h3>
-                <p className="text-sm text-slate-500 leading-relaxed">
-                  Are you sure you want to delete <span className="font-semibold text-slate-900">{clientToDelete.name}</span>?
-                  This action is permanent and will delete their company data. Existing invoices linked to this client will remain.
-                </p>
-              </div>
-            </div>
-            <div className="flex justify-end gap-3 pt-2">
-              <button
-                onClick={() => setClientToDelete(null)}
-                disabled={isDeleting}
-                className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold rounded-lg text-sm transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDeleteClient}
-                disabled={isDeleting}
-                className="px-5 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg text-sm transition-colors flex items-center gap-2"
-              >
-                {isDeleting && <Loader2 className="w-4 h-4 animate-spin" />}
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        isOpen={clientToDelete !== null}
+        title="Delete client?"
+        description={`Are you sure you want to delete ${clientToDelete?.name}? This action is permanent and will delete their company data. Existing invoices linked to this client will remain.`}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        onConfirm={handleDeleteClient}
+        onCancel={() => setClientToDelete(null)}
+        isLoading={isDeleting}
+        type="danger"
+      />
     </div>
   );
 }

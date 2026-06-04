@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -461,6 +461,29 @@ export default function NewInvoicePage() {
     setIsSendingEmail(false);
   };
 
+  // Keyboard Shortcut: Ctrl+Enter to save & download PDF
+  const downloadRef = useRef(handleDownloadPDF);
+  useEffect(() => {
+    downloadRef.current = handleDownloadPDF;
+  });
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        
+        // Blur current focused element to commit changes
+        if (document.activeElement instanceof HTMLElement) {
+          document.activeElement.blur();
+        }
+        
+        downloadRef.current();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   // Loading indicator overlay
   if (loading) {
     return (
@@ -515,6 +538,7 @@ export default function NewInvoicePage() {
                 <input
                   id="invoice-num-input"
                   type="text"
+                  autoFocus
                   value={invoiceNumber}
                   onChange={(e) => setInvoiceNumber(e.target.value)}
                   className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#6C63FF] focus:border-[#6C63FF]"

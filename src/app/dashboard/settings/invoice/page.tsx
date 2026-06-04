@@ -94,7 +94,16 @@ export default function InvoiceSettingsPage() {
         <p className="text-slate-500 text-xs mt-0.5">Customize invoice sequences, terms offsets, default comments, and styling.</p>
       </div>
 
-      <form onSubmit={handleInvoiceSettingsSave} className="space-y-6">
+      <form 
+        onSubmit={handleInvoiceSettingsSave} 
+        className="space-y-6"
+        onKeyDown={(e) => {
+          if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+            e.preventDefault();
+            e.currentTarget.requestSubmit();
+          }
+        }}
+      >
         
         {/* Numbering Sequence */}
         <div className="border border-slate-100 rounded-xl p-5 space-y-4 bg-slate-50/20">
@@ -109,6 +118,7 @@ export default function InvoiceSettingsPage() {
               <input
                 id="invoice-prefix"
                 type="text"
+                autoFocus
                 value={invoicePrefix}
                 onChange={(e) => setInvoicePrefix(e.target.value)}
                 className="w-full text-xs border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-100 outline-none transition-all"

@@ -12,14 +12,14 @@ import {
   Trash2,
   Loader2,
   CreditCard,
-  History,
-  AlertTriangle
+  History
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 import { Invoice, InvoiceItem, Client, Profile } from '@/types';
 import StatusBadge from '@/components/invoice/StatusBadge';
 import { numberToIndianWords } from '@/lib/utils';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 
 interface InvoiceDetailClientProps {
   invoice: Invoice & { client: Client };
@@ -81,6 +81,16 @@ export default function InvoiceDetailClient({
 
   // Update Status in database
   const handleUpdateStatus = async (newStatus: typeof invoice.status) => {
+    const prevInvoiceState = { ...invoice };
+    
+    // Optimistic Update
+    setInvoice((prev) => ({
+      ...prev,
+      status: newStatus,
+      amount_paid: newStatus === 'paid' ? prev.total_amount : prev.amount_paid,
+      updated_at: new Date().toISOString(),
+    }));
+    
     setIsUpdatingStatus(newStatus);
     try {
       const payload: Partial<Invoice> = { status: newStatus };
@@ -94,19 +104,17 @@ export default function InvoiceDetailClient({
         .eq('id', invoice.id);
 
       if (error) {
+        // Rollback
+        setInvoice(prevInvoiceState);
         toast.error(error.message);
         return;
       }
 
       toast.success(`Invoice status updated to ${newStatus}.`);
-      setInvoice((prev) => ({
-        ...prev,
-        status: newStatus,
-        amount_paid: newStatus === 'paid' ? prev.total_amount : prev.amount_paid,
-        updated_at: new Date().toISOString(),
-      }));
       router.refresh();
     } catch {
+      // Rollback
+      setInvoice(prevInvoiceState);
       toast.error('Failed to update status.');
     } finally {
       setIsUpdatingStatus(null);
@@ -725,42 +733,17 @@ export default function InvoiceDetailClient({
         </div>
       </div>
 
-      {/* Delete Confirmation Modal */}
-      {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 space-y-6 shadow-2xl border border-slate-100">
-            <div className="flex items-start gap-4">
-              <div className="p-3 bg-red-50 text-red-600 rounded-full shrink-0">
-                <AlertTriangle className="w-6 h-6" />
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-lg font-bold text-slate-900">Delete invoice?</h3>
-                <p className="text-sm text-slate-500 leading-relaxed">
-                  Are you sure you want to delete invoice <span className="font-semibold text-slate-900">{invoice.invoice_number}</span>?
-                  This action is permanent and will remove the invoice and its child line items databases records.
-                </p>
-              </div>
-            </div>
-            <div className="flex justify-end gap-3 pt-2">
-              <button
-                onClick={() => setShowDeleteConfirm(false)}
-                disabled={isDeleting}
-                className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold rounded-lg text-xs transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDeleteInvoice}
-                disabled={isDeleting}
-                className="px-5 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg text-xs transition-colors flex items-center gap-1.5"
-              >
-                {isDeleting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        title="Delete invoice?"
+        description={`Are you sure you want to delete invoice ${invoice.invoice_number}? This action is permanent and will remove the invoice and its child line items database records.`}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        onConfirm={handleDeleteInvoice}
+        onCancel={() => setShowDeleteConfirm(false)}
+        isLoading={isDeleting}
+        type="danger"
+      />
     </div>
   );
 }

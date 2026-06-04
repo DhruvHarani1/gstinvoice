@@ -49,6 +49,7 @@ export default function ClientForm({ initialData, onSubmit, isSubmitting }: Clie
     formState: { errors },
   } = useForm<ClientFormValues>({
     resolver: zodResolver(clientFormSchema),
+    mode: 'onBlur',
     defaultValues: {
       name: initialData?.name || '',
       email: initialData?.email || '',
@@ -61,8 +62,19 @@ export default function ClientForm({ initialData, onSubmit, isSubmitting }: Clie
     },
   });
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      handleSubmit(onSubmit)();
+    }
+  };
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-2xl bg-white p-8 rounded-2xl border border-slate-100 shadow-sm">
+    <form 
+      onSubmit={handleSubmit(onSubmit)} 
+      onKeyDown={handleKeyDown}
+      className="space-y-6 max-w-2xl bg-white p-8 rounded-2xl border border-slate-100 shadow-sm"
+    >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         
         {/* Name */}
@@ -74,8 +86,9 @@ export default function ClientForm({ initialData, onSubmit, isSubmitting }: Clie
             id="name"
             type="text"
             placeholder="Acme Corporates Ltd."
+            autoFocus
             disabled={isSubmitting}
-            className={`w-full px-3 py-2 border rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#6C63FF] focus:border-[#6C63FF] disabled:opacity-50 ${
+            className={`w-full px-3 py-2 border rounded-lg text-slate-900 placeholder-slate-450 focus:outline-none focus:ring-2 focus:ring-[#6C63FF] focus:border-[#6C63FF] disabled:opacity-50 ${
               errors.name ? 'border-red-500' : 'border-slate-300'
             }`}
             {...register('name')}

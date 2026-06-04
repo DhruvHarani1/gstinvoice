@@ -127,7 +127,16 @@ export default function AccountSettingsPage() {
           <h3 className="text-xs font-bold text-slate-700 flex items-center gap-1.5 border-b border-slate-100 pb-2">
             <Mail className="w-4 h-4 text-indigo-500" /> Change Email Address
           </h3>
-          <form onSubmit={handleEmailChange} className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+          <form 
+            onSubmit={handleEmailChange} 
+            className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end"
+            onKeyDown={(e) => {
+              if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                e.currentTarget.requestSubmit();
+              }
+            }}
+          >
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1" htmlFor="new-email">
                 New Email Address
@@ -136,6 +145,7 @@ export default function AccountSettingsPage() {
                 id="new-email"
                 type="email"
                 required
+                autoFocus
                 value={newEmail}
                 onChange={(e) => setNewEmail(e.target.value)}
                 className="w-full text-xs border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-100 outline-none transition-all"
@@ -174,7 +184,16 @@ export default function AccountSettingsPage() {
           <h3 className="text-xs font-bold text-slate-700 flex items-center gap-1.5 border-b border-slate-100 pb-2">
             <Key className="w-4 h-4 text-indigo-500" /> Update Password
           </h3>
-          <form onSubmit={handlePasswordChange} className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+          <form 
+            onSubmit={handlePasswordChange} 
+            className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end"
+            onKeyDown={(e) => {
+              if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                e.currentTarget.requestSubmit();
+              }
+            }}
+          >
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1" htmlFor="new-pwd">
                 New Password (min 6 characters)
@@ -224,7 +243,16 @@ export default function AccountSettingsPage() {
           <p className="text-slate-500 text-xs leading-relaxed">
             Deleting your account is a permanent action. This will erase your invoices, client directories, subscription properties, and personal profiles immediately. You cannot undo this step.
           </p>
-          <form onSubmit={handleDeleteAccount} className="space-y-4 max-w-sm">
+          <form 
+            onSubmit={handleDeleteAccount} 
+            className="space-y-4 max-w-sm"
+            onKeyDown={(e) => {
+              if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                e.currentTarget.requestSubmit();
+              }
+            }}
+          >
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1" htmlFor="delete-confirm">
                 To confirm deletion, type <strong className="text-red-600">DELETE</strong> below:
