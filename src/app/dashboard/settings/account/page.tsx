@@ -40,9 +40,9 @@ export default function AccountSettingsPage() {
       toast.success('Confirmation links dispatched! Please verify links sent to both your current and new email addresses.');
       setNewEmail('');
       setConfirmEmail('');
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      toast.error(err.message || 'Failed to update email address.');
+      toast.error(err instanceof Error ? err.message : 'Failed to update email address.');
     } finally {
       setIsUpdatingEmail(false);
     }
@@ -69,9 +69,9 @@ export default function AccountSettingsPage() {
       toast.success('Password updated successfully!');
       setNewPassword('');
       setConfirmPassword('');
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      toast.error(err.message || 'Failed to update password.');
+      toast.error(err instanceof Error ? err.message : 'Failed to update password.');
     } finally {
       setIsUpdatingPassword(false);
     }
@@ -106,9 +106,9 @@ export default function AccountSettingsPage() {
       await supabase.auth.signOut();
       router.push('/login');
       router.refresh();
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      toast.error(err.message || 'Failed to delete account.');
+      toast.error(err instanceof Error ? err.message : 'Failed to delete account.');
       setIsDeleting(false);
     }
   };

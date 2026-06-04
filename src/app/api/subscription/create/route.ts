@@ -83,22 +83,22 @@ export async function POST(request: NextRequest) {
           .from('subscriptions')
           .update({ razorpay_customer_id: customerId })
           .eq('user_id', user.id);
-      } catch (custErr: any) {
+      } catch (custErr) {
         console.error('Failed to create Razorpay customer:', custErr);
         return NextResponse.json(
-          { error: `Razorpay customer registration failed: ${custErr.message}` },
+          { error: `Razorpay customer registration failed: ${custErr instanceof Error ? custErr.message : 'Unknown customer error'}` },
           { status: 500 }
         );
       }
     }
 
     // 5. Create Subscription in Razorpay (casting to any to bypass typings gaps)
-    const rzpSubscription: any = await razorpay.subscriptions.create({
+    const rzpSubscription = (await razorpay.subscriptions.create({
       plan_id: planId,
       customer_id: customerId,
       total_count: 120, // 10 years monthly cycles
       quantity: 1,
-    } as any);
+    } as unknown as Parameters<typeof razorpay.subscriptions.create>[0])) as unknown as { id: string };
 
     // 6. Record the pending subscription ID to our database
     await supabase
@@ -112,10 +112,10 @@ export async function POST(request: NextRequest) {
       subscription_id: rzpSubscription.id,
       key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID || 'rzp_test_placeholder',
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error creating Razorpay subscription:', error);
     return NextResponse.json(
-      { error: error.message || 'Internal Server Error' },
+      { error: error instanceof Error ? error.message : 'Internal Server Error' },
       { status: 500 }
     );
   }

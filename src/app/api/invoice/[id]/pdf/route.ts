@@ -74,7 +74,7 @@ export async function GET(
         pdfThemeColor,
         upiId,
         showBankDetails,
-      }) as any
+      }) as React.ReactElement
     );
 
     // Convert Node.js readable stream to Web ReadableStream
@@ -92,7 +92,7 @@ export async function GET(
         'Content-Disposition': `attachment; filename="Invoice-${invoice.invoice_number}.pdf"`,
       },
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error generating PDF:', error);
     return new Response('Internal Server Error', { status: 500 });
   }

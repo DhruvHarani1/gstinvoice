@@ -8,7 +8,6 @@ import {
   Plus,
   Trash2,
   Loader2,
-  Sparkles,
   Calendar,
   ArrowLeft,
   Download,

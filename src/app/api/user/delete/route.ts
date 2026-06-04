@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { createClient as createServerClient } from '@/lib/supabase/server';
 
@@ -13,7 +13,7 @@ const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
   },
 });
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     const supabase = createServerClient();
 
@@ -41,10 +41,10 @@ export async function POST(request: NextRequest) {
       success: true,
       message: 'Account deleted successfully.',
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error in account deletion endpoint:', error);
     return NextResponse.json(
-      { error: error.message || 'Internal Server Error' },
+      { error: error instanceof Error ? error.message : 'Internal Server Error' },
       { status: 500 }
     );
   }

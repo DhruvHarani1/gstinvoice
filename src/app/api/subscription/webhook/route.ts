@@ -109,8 +109,8 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ status: 'ok' });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error handling webhook payload:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'Internal Server Error' }, { status: 500 });
   }
 }

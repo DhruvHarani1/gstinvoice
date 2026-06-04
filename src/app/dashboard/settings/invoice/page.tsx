@@ -79,9 +79,9 @@ export default function InvoiceSettingsPage() {
 
       toast.success('Invoice preferences updated successfully!');
       await refreshProfile();
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      toast.error(err.message || 'Failed to update invoice settings.');
+      toast.error(err instanceof Error ? err.message : 'Failed to update invoice settings.');
     } finally {
       setIsSaving(false);
     }

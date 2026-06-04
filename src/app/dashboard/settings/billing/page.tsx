@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useProfile } from '@/contexts/ProfileContext';
-import { Check, Loader2, Sparkles, CreditCard, ShieldAlert, Calendar, History, Trash } from 'lucide-react';
+import { Check, Loader2, Sparkles, CreditCard, Calendar, History, Trash } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface RazorpayInvoice {
@@ -43,7 +43,7 @@ export default function BillingSettingsPage() {
 
   const loadRazorpayScript = () => {
     return new Promise((resolve) => {
-      if ((window as any).Razorpay) {
+      if ((window as unknown as { Razorpay: unknown }).Razorpay) {
         resolve(true);
         return;
       }
@@ -84,7 +84,7 @@ export default function BillingSettingsPage() {
         name: 'InvoiceWala',
         description: `Upgrade to ${targetPlan === 'business' ? 'Business' : 'Pro'} Plan`,
         image: 'https://placeholder.co/128x128?text=IW',
-        handler: async function (response: any) {
+        handler: async function () {
           toast.success('Payment authorized! Updating account...');
           
           await new Promise((resolve) => setTimeout(resolve, 3000));
@@ -107,11 +107,12 @@ export default function BillingSettingsPage() {
         },
       };
 
-      const rzp = new (window as any).Razorpay(options);
+      const RazorpayConstructor = (window as unknown as { Razorpay: new (opts: unknown) => { open: () => void } }).Razorpay;
+      const rzp = new RazorpayConstructor(options);
       rzp.open();
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      toast.error(err.message || 'Payment initiation failed.');
+      toast.error(err instanceof Error ? err.message : 'Payment initiation failed.');
       setIsUpgradingPlan(null);
     }
   };
@@ -133,9 +134,9 @@ export default function BillingSettingsPage() {
 
       toast.success(data.message || 'Subscription cancelled successfully.');
       await refreshSubscription();
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      toast.error(err.message || 'Failed to cancel subscription.');
+      toast.error(err instanceof Error ? err.message : 'Failed to cancel subscription.');
     } finally {
       setIsCancelling(false);
     }

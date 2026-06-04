@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useProfile } from '@/contexts/ProfileContext';
 import { createClient } from '@/lib/supabase/client';
 import { INDIAN_STATES } from '@/lib/constants';
-import { Upload, Loader2, FileText, CheckCircle2, ShieldAlert } from 'lucide-react';
+import { Upload, Loader2, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function ProfileSettingsPage() {
@@ -74,9 +74,9 @@ export default function ProfileSettingsPage() {
 
       toast.success('Business profile updated successfully!');
       await refreshProfile();
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      toast.error(err.message || 'Failed to update business profile.');
+      toast.error(err instanceof Error ? err.message : 'Failed to update business profile.');
     } finally {
       setIsSaving(false);
     }
@@ -136,9 +136,9 @@ export default function ProfileSettingsPage() {
 
       toast.success(`${bucket === 'logos' ? 'Logo' : 'Signature'} uploaded and updated successfully!`);
       await refreshProfile();
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      toast.error(err.message || 'File upload failed.');
+      toast.error(err instanceof Error ? err.message : 'File upload failed.');
     } finally {
       setUploading(false);
     }

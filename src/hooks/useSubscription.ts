@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useProfile } from '@/contexts/ProfileContext';
 import { createClient } from '@/lib/supabase/client';
 import { PLAN_LIMITS } from '@/lib/constants';
@@ -15,7 +15,7 @@ export function useSubscription() {
   const isProPlan = () => plan === 'pro';
   const isBusinessPlan = () => plan === 'business';
 
-  const fetchLiveInvoiceCount = async () => {
+  const fetchLiveInvoiceCount = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -33,11 +33,11 @@ export function useSubscription() {
     } finally {
       setLoadingCount(false);
     }
-  };
+  }, [supabase]);
 
   useEffect(() => {
     fetchLiveInvoiceCount();
-  }, [subscription]);
+  }, [subscription, fetchLiveInvoiceCount]);
 
   const canCreateInvoice = () => {
     return liveInvoiceCount < limit;

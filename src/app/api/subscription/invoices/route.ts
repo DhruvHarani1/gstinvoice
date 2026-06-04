@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import Razorpay from 'razorpay';
 import { createClient } from '@/lib/supabase/server';
 
@@ -7,7 +7,7 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET || 'secret_placeholder',
 });
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const supabase = createClient();
 
@@ -39,14 +39,14 @@ export async function GET(request: NextRequest) {
       });
 
       return NextResponse.json(invoices.items || []);
-    } catch (rzpErr: any) {
+    } catch (rzpErr) {
       console.error('Failed to fetch invoices from Razorpay:', rzpErr);
       return NextResponse.json([]); // Return empty list rather than throwing to avoid breaking UI settings page
     }
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error fetching billing invoices:', error);
     return NextResponse.json(
-      { error: error.message || 'Internal Server Error' },
+      { error: error instanceof Error ? error.message : 'Internal Server Error' },
       { status: 500 }
     );
   }

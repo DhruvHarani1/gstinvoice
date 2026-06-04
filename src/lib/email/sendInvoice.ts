@@ -78,7 +78,7 @@ export async function sendInvoiceEmail(invoiceId: string, recipientEmail: string
     sellerEmail: sellerEmail || undefined,
   });
 
-  const buffer = await renderToBuffer(pdfElement as any);
+  const buffer = await renderToBuffer(pdfElement as React.ReactElement);
 
   // 6. Dispatch Email via Resend
   const fromEmail = process.env.RESEND_FROM_EMAIL || 'invoices@invoicewala.in';
@@ -91,7 +91,7 @@ export async function sendInvoiceEmail(invoiceId: string, recipientEmail: string
       invoice: invoice as unknown as Invoice,
       client: invoice.client as unknown as Client,
       profile: profile,
-    }) as any,
+    }) as React.ReactElement,
     attachments: [
       {
         filename: `invoice-${invoice.invoice_number}.pdf`,

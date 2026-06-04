@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import Razorpay from 'razorpay';
 import { createClient } from '@/lib/supabase/server';
 
@@ -7,7 +7,7 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET || 'secret_placeholder',
 });
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     const supabase = createClient();
 
@@ -45,10 +45,10 @@ export async function POST(request: NextRequest) {
     // 3. Request Razorpay to cancel subscription at the end of current cycle
     try {
       await razorpay.subscriptions.cancel(rzpSubscriptionId, true);
-    } catch (rzpErr: any) {
+    } catch (rzpErr) {
       console.error('Razorpay cancellation failed:', rzpErr);
       return NextResponse.json(
-        { error: `Razorpay cancellation failed: ${rzpErr.message}` },
+        { error: `Razorpay cancellation failed: ${rzpErr instanceof Error ? rzpErr.message : 'Unknown error'}` },
         { status: 500 }
       );
     }
@@ -73,10 +73,10 @@ export async function POST(request: NextRequest) {
       success: true,
       message: 'Subscription has been scheduled for cancellation at the end of the billing cycle.',
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error cancelling subscription:', error);
     return NextResponse.json(
-      { error: error.message || 'Internal Server Error' },
+      { error: error instanceof Error ? error.message : 'Internal Server Error' },
       { status: 500 }
     );
   }

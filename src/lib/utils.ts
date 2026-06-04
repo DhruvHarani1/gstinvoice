@@ -80,3 +80,13 @@ export function numberToIndianWords(num: number): string {
   return finalStr.replace(/\s+/g, ' ').trim();
 }
 
+export function formatIndianCurrency(amount: number): string {
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount);
+}
+
+

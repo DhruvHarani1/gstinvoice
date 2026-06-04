@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useProfile } from '@/contexts/ProfileContext';
 import { createClient } from '@/lib/supabase/client';
-import { Loader2, Landmark, HelpCircle, Eye, EyeOff } from 'lucide-react';
+import { Loader2, Landmark, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function BankSettingsPage() {
@@ -61,9 +61,9 @@ export default function BankSettingsPage() {
 
       toast.success('Bank details updated successfully!');
       await refreshProfile();
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      toast.error(err.message || 'Failed to update bank details.');
+      toast.error(err instanceof Error ? err.message : 'Failed to update bank details.');
     } finally {
       setIsSaving(false);
     }

@@ -48,10 +48,10 @@ export async function GET(request: NextRequest) {
       updatedCount: updatedInvoices?.length || 0,
       updatedInvoices: updatedInvoices || [],
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error in cron/mark-overdue:', error);
     return NextResponse.json(
-      { error: error.message || 'Internal Server Error' },
+      { error: error instanceof Error ? error.message : 'Internal Server Error' },
       { status: 500 }
     );
   }

@@ -65,10 +65,10 @@ export async function POST(
       success: true,
       message: 'Invoice email sent and status updated to sent.',
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error in email sending route:', error);
     return NextResponse.json(
-      { error: error.message || 'Internal Server Error' },
+      { error: error instanceof Error ? error.message : 'Internal Server Error' },
       { status: 500 }
     );
   }

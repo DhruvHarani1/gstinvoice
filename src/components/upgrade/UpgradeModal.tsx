@@ -20,7 +20,7 @@ export default function UpgradeModal({ isOpen, onClose }: UpgradeModalProps) {
 
   const loadRazorpayScript = () => {
     return new Promise((resolve) => {
-      if ((window as any).Razorpay) {
+      if ((window as unknown as { Razorpay: unknown }).Razorpay) {
         resolve(true);
         return;
       }
@@ -64,7 +64,7 @@ export default function UpgradeModal({ isOpen, onClose }: UpgradeModalProps) {
         name: 'InvoiceWala',
         description: 'Upgrade to Pro Plan (₹299/mo)',
         image: 'https://placeholder.co/128x128?text=IW',
-        handler: async function (response: any) {
+        handler: async function () {
           toast.success('Payment authorized! Activation webhook in progress.');
           setIsProcessing(true);
           
@@ -90,11 +90,12 @@ export default function UpgradeModal({ isOpen, onClose }: UpgradeModalProps) {
         },
       };
 
-      const rzp = new (window as any).Razorpay(options);
+      const RazorpayConstructor = (window as unknown as { Razorpay: new (opts: unknown) => { open: () => void } }).Razorpay;
+      const rzp = new RazorpayConstructor(options);
       rzp.open();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Subscription setup failed:', error);
-      toast.error(error.message || 'Something went wrong during checkout.');
+      toast.error(error instanceof Error ? error.message : 'Something went wrong during checkout.');
       setIsProcessing(false);
     }
   };
