@@ -1,0 +1,7 @@
+# superbase
+email -> dhruvharani5@gmail.com
+database password -> l2WV1OtyH43ABUac
+project url -> https://msbszkvxmavxhczpwrrq.supabase.co
+publish key -> sb_publishable_Ps_CdUXOuOGocwKroAVKwA_9zY_VVi9
+direct connection string -> postgresql://postgres:l2WV1OtyH43ABUac@db.msbszkvxmavxhczpwrrq.supabase.co:5432/postgres
+
